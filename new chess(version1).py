@@ -2,7 +2,6 @@ import pygame as pg
 import tkinter.messagebox as tkm
 from sys import exit
 from random import randint,shuffle
-#αρχικό φόντο
 
 pg.init()
 screen = pg.display.set_mode((720, 720))
@@ -10,18 +9,17 @@ pg.display.set_caption("Chess Game")
 board_image = pg.image.load("board.png")
 screen.blit(board_image, (0, 0))
 pg.display.flip()
-player=0
+player=0#0 is white's turn and 1 is black's
 movement=0
-agk=0
 book=0
 grass=0
-piece_images = {#περιέχει τις εικόνες των κομματιών
+piece_images = {#contains the images of the pieces
     'bniqueen':pg.transform.rotate(pg.image.load("bqueen.png"),180),
     'wniqueen':pg.transform.rotate(pg.image.load("wqueen.png"),180),
 }
 lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','rpawn']
 for item in lexlist:piece_images[item]= pg.image.load(item+".png")
-position = [#περιέχει τις θέσεις των κομματιών
+position = [#πcontains the position of the pieces
     ['brook', 'bnight', 'bbishop', 'bqueen', 'bking', 'bbishop','bnight','brook'],         # 00,01,02,03,04,05,06,07
     ['bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn'],        # 08,09,10,11,12,13,14,15
     [None, None, None, None, None, None, None, None],                                         # 16,17,18,19,20,21,22,23
@@ -37,7 +35,7 @@ kc=[1,1]
 selected_piece = None
 selected_piece_position = None
 
-def draw_pieces(screen, piece_images, position):#σχεδιάζει τα κομμάτια
+def draw_pieces(screen, piece_images, position):#places the images of the pieces on their position
     for row in range(8):
         for col in range(8):
             piece = position[row][col]
@@ -46,31 +44,31 @@ def draw_pieces(screen, piece_images, position):#σχεδιάζει τα κομ�
                 y = row * 90
                 screen.blit(piece_images[piece], (x, y))
     
-def curses(rd):#πραγματοποιεί τις κατάρες
+def curses(rd):#implements the curses
     global position, piece_images,selected_piece,agk
-    if rd==1:#βάζει πιόνια στις αρχικές θέσεις
+    if rd==1:#puts white pawns on the second row and black pawns on the 7th row (on empty squares)
         for i in range (8):
             if position[1][i]== None: position[1][i]='bpawn'
             if position[6][i]==None: position[6][i]='wpawn'
-    elif rd==2:#εξαφανίζει κάποια πιόνια
+    elif rd==2:#makes some pawns disappear
         for i in range (8):
             for j in range(8):
                 if position[i][j]!=None:
                     rd9=randint(1,9)
                     if position[i][j][1]=='p' and rd9>5:position[i][j]=None
-    elif rd==3:#αλλάζει θέση σε ίππους και αξιωματικούς
+    elif rd==3:#turns the bishops into knights and vise-versa
         for i in range(8):
             for j in range(8):
                 if position[i][j]!=None:
                     if position[i][j][1]=='b': position[i][j]=position[i][j][0]+'night'
                     elif position[i][j][1:3]=='ni': position[i][j]=position[i][j][0]+'bishop'
         selected_piece=selected_piece[0]+'night'
-    elif rd==4:#υποβαθμίζει τις βασίλισσες σε πύργους
+    elif rd==4:#demotes the queens into rooks
         for i in range(8):
             for j in range(8):
                 if position[i][j]!=None:
                     if position[i][j][1]=='q': position[i][j]=position[i][j][0]+'rook'
-    elif rd==5:#εμφανίζει τυχαία δύο πιόνια όχι στις ακριανές γραμμές
+    elif rd==5:#makes two pawns appear somewhere in the board with the exception of 1st and 8th row
         while True:
             rd8_1,rd8_2=random_pos()
             if rd8_1>0 and rd8_1<7 and position[rd8_1][rd8_2]==None:
@@ -81,23 +79,22 @@ def curses(rd):#πραγματοποιεί τις κατάρες
             if rd8_1>0 and rd8_1<7 and position[rd8_1][rd8_2]==None:
                 position[rd8_1][rd8_2]='bpawn'
                 break
-    elif rd==6:#αλλάζει τις βασίλισσες σε άντιβασίλισσες
+    elif rd==6:#changes queens into antiqueens
         for i in range(8):
             for j in range(8):
                 if position[i][j]!=None:
                     if position[i][j][1]=='q': position[i][j]=position[i][j][0]+'niqueen'
-    elif rd==7:#κάνει τα πιόνια πούλια ντάμας
+    elif rd==7:#changes the pieces into checkers pieces
         for key in piece_images:
             if key[0]=='b':piece_images[key]=pg.image.load("bcheckers.png")
             if key[0]=='w':piece_images[key]=pg.image.load("wcheckers.png")
-    elif rd==8:#κάνει τα πιόνια αγακθωτά
-        agk=1
+
 
 def bcurses():#επιλέγει κατάρα μετά από συνάντηση αξιωματικών
-    rd=randint(1,8)
+    rd=randint(1,7)
     curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns who disappear",  "The meeting of the two bishops changes the knights and bishops",
              "The meeting of the two bishops curses the queens who turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
-              "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before","The meeting of the two bishops curses the knights who now can't capture pawns"]
+              "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before"]
     tkm.showinfo("Cursed",curselist[rd-1])
     curses(rd)
 
@@ -107,7 +104,7 @@ def random_pos():
     return rd1, rd2
         
 def legal(piece, starting_position, ending_position):# ελέγχει την νομιμότητα της κίνησης
-    global blist,wlist, player, position,multi_chess, agk,sk
+    global blist,wlist, player, position,multi_chess, sk
     difference=ending_position-starting_position
     wlist=[]
     blist=[]
@@ -148,7 +145,6 @@ def legal(piece, starting_position, ending_position):# ελέγχει την ν�
 
     #knights, knooks and anti-queens
     if (piece[:2]=='wn' and ending_position not in wlist) or (piece[:2]=='bn' and ending_position not in blist):
-        if (piece[:2]=='wn' and position[erow][ecol]=='bpawn' and agk==1) or (piece[:2]=='bn' and position[erow][ecol]=='wpawn' and agk==1): return 0
         if difference==-17 and starting_position//8>=2 and starting_position%8>0: return 1
         if difference==17 and starting_position//8<=5 and starting_position%8<7: return 1
         if difference==-15 and starting_position//8>=2 and starting_position%8<7: return 1
