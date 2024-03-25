@@ -6,51 +6,65 @@ from random import randint,shuffle
 
 class MyLayout(FloatLayout):
     def __init__(self, **kwargs):
-        global chessboard,player
         super(MyLayout, self).__init__(**kwargs)
-        chessboard=Chessboard()
         self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=False)
-        self.add_widget(self.image)  # Προσθήκη της εικόνας στο layout        
-        namelist=['rook1','night1','bishop1','queen1','king1','bishop2','night2','rook2']
-        movelist=[[4],[3],[5],[4,5],[2],[5],[3],[4]]
-        collist=[['black','white'],[0,7]]
-        
-        for j in range(8):
-            globals()[f'wpawn{j+1}']=Piece("white", "pawn", j, 6,j+1,[0])
-            globals()[f'bpawn{j+1}']=Piece("black", "pawn", j, 1,j+1,[1])
-            for i in range(2):
-                globals()[f'{collist[0][i][0]}{namelist[j]}']= Piece(collist[0][i], namelist[j][:-1], j, collist[1][i],int(namelist[j][-1]),movelist[j])
-        self.selected_piece = None
+        self.add_widget(self.image)
+        self.piece_images = {#περιέχει τις εικόνες των κομματιών
+        }
+        self.piece_imb={}
+        self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wnook','bnook','wniqueen','bniqueen','rpawn']
+        for item in self.lexlist:
+            self.piece_imb[item]=item+'.png'
+            self.piece_images[item]= Image(source=self.piece_imb[item], size_hint=(0.125, 0.125))
+        self.position = [#περιέχει τις θέσεις των κομματιών
+        ['wrook', 'wnight', 'wbishop', 'wqueen', 'wking', 'wbishop', 'wnight', 'wrook'],         # 00,01,02,03,04,05,06,07
+        ['wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn'],        # 08,09,10,11,12,13,14,15
+        [None, None, None, None, None, None, None, None],                                         # 16,17,18,19,20,21,22,23
+        [None, None, None, None, None, None, None, None],                                         # 24,25,26,27,28,29,30,31
+        [None, None, None, None, None, None, None, None],                                         # 32,33,34,35,36,37,38,39
+        [None, None, None, None, None, None, None, None],                                         # 40,41,42,43,44,45,46,47
+        ['bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn', 'bpawn'],    # 48,49,50,51,52,53,54,55
+        ['brook', 'bnight', 'bbishop', 'bqueen', 'bking', 'bbishop', 'bnight', 'brook']     # 56,57,58,59,60,61,62,63
+        ]
+        self.moves=[]
         self.player=0
-        columnletters=['a','b','c','d','e','f','g','h']
-        for row in range(8):
-            for col in range(8):
-                piece = chessboard.position[row][col]
-                if piece is not None:
-                    x = col * self.width//8
-                    y = row * self.height//8
-                    self.add_widget(piece.image) 
+
+        self.checkers=0
+        self.columnletters=['a','b','c','d','e','f','g','h']
+        self.kc=[1,1]
+        self.selected_piece = None
+        self.selected_piece_position = None
+        self.running=True
+        self.mrow,self.mcol=0,0
+        self.brow,self.bcol=0,0
+        self.grass=0
+        self.book=0
+        self.sk=0
     def on_size(self, *args):
         #self.img2.pos = (self.x2*self.width / 8 , self.y2*self.height / 8)
         self.draw_pieces()        
     def on_touch_down(self, touch):
+        if not self.running:return 0
         self.col=int(touch.x//(self.width//8))
         self.row=int(touch.y//(self.height//8))
-        if chessboard.position[self.row][self.col] is not None:
-            self.selected_piece = chessboard.position[self.row][self.col]
-            if (self.selected_piece.color[0]=="w" and self.player==0) or (self.selected_piece.color[0]=="b" and self.player==1):            
+        if self.position[self.row][self.col] is not None:
+            self.selected_piece = self.position[self.row][self.col]
+            if (self.selected_piece[0]=="w" and self.player==0) or (self.selected_piece[0]=="b" and self.player==1):            
                 self.selected_piece_position = (self.row, self.col)
                 self.movement=1
-                chessboard.position[self.row][self.col] = None
-            else: self.selected_piece=None
-            
-        #return super(MyLayout, self).on_touch_down(touch)
+                self.selected_imagen = self.piece_imb[self.selected_piece]  # Ορισμός της εικόνας του επιλεγμένου κομματιού
+                self.selected_image=Image(source=self.selected_imagen, size_hint=(0.125, 0.125),pos=(self.col*self.width/8,self.row*self.height/8))
+                self.position[self.row][self.col] = None
+                self.draw_pieces()
+                self.add_widget(self.selected_image)
+            else: self.selected_piece=None  
+        return super(MyLayout, self).on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if self.selected_piece is not None:
-            self.new_x = touch.x - self.selected_piece.image.width / 2
-            self.new_y = touch.y - self.selected_piece.image.height / 2
-            self.selected_piece.image.pos =(self.new_x, self.new_y)
+            self.new_x = touch.x - self.selected_image.width / 2
+            self.new_y = touch.y - self.selected_image.height / 2
+            self.selected_image.pos =(self.new_x, self.new_y)
 
     def on_touch_up(self, touch):
         self.ocol=self.col
@@ -58,142 +72,160 @@ class MyLayout(FloatLayout):
         if self.selected_piece!=None :
             self.col=int(touch.x//(self.width /8))
             self.row=int(touch.y//(self.height/8))
-            if legal(self.selected_piece,8*self.orow+self.ocol,8*self.row+self.col):
+            if self.legal(8*self.orow+self.ocol,8*self.row+self.col) and self.row>=0 and self.col >=0:
+                self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#προστίθεταιη κίνηση στην λίστα
                 self.player=(self.player+1)%2
-                if chessboard.position[self.row][self.col]!=None :# αν υπάρχει κάποιο κομμάτι στην τελική θέση
-                    if self.selected_piece.name[0]=='b' and chessboard.position[self.row][self.col].name[0]=='b':
-                        bcurses(self.selected_piece)
-                    chessboard.position[self.row][self.col].captured()
-                chessboard.position[self.row][self.col]=self.selected_piece
+                if self.position[self.row][self.col]!=None :# αν υπάρχει κάποιο κομμάτι στην τελική θέση
+                    if self.selected_piece[1]=='b' and self.position[self.row][self.col][1]=='b':
+                        self.bcurses()
+                    if self.position[self.row][self.col][1]=='k':#ελέγχει αν φαγώθηκε ο βασιλιάς
+                        tkm.showinfo("You lost", "They captured your king")
+                        self.running=False
+                    if self.selected_piece[1]=='n' and self.position[self.row][self.col][1]=='r' and self.selected_piece[0]==self.position[self.row][self.col][0]:self.selected_piece=self.selected_piece[0]+"nook"
+                    promotions=['queen','rook','bishop','night']#αν κάποιο πιονάκι φτάσει στην τελευταία σειρά
+                    shuffle(promotions)
+                    if self.selected_piece[:2]=='wp' and self.row==7 :
+                        tkm.showinfo("Don't you fill lucky?","The promotion is random")
+                        self.selected_piece='w'+promotions[1]
+                    if self.selected_piece[:2]=="bp" and self.row==0:
+                        tkm.showinfo("Don't you fill lucky?","The promotion is random")
+                        self.selected_piece='b'+promotions[2]    
+                self.position[self.row][self.col]=self.selected_piece
+                if self.selected_piece[1]=='p':#ελέγχει για αν-πασάν
+                    if abs(self.orow-self.row)==2: self.enpassant(self.row,self.col)
+                #interesting openings
+                if self.moves[-1]=='nc4':
+                    tkm.showinfo("C4 is explosive!", "This tile is very explosive and your ex-knight-looking piece hit it")
+                    self.position[3][2]=None
+                if self.position[self.mrow][self.mcol]!=None:
+                    if self.position[self.mrow][self.mcol][1]=='n' and self.grass==1:
+                        tkm.showinfo("The knight just ate the mushroom","You didn't teach it to not eat everything. Now it thinks it belongs to the other team")
+                        if self.position[self.mrow][self.mcol][0]=='w':self.position[self.mrow][self.mcol]='b'+self.position[self.mrow][self.mcol][1:]
+                        else:self.position[self.mrow][self.mcol]='w'+self.position[self.mrow][self.mcol][1:]
+                        self.grass=0
+                if self.position[self.brow][self.bcol]!=None:                
+                    if self.position[self.brow][self.bcol][1]=="p" and self.book==1:
+                        tkm.showinfo("Why did you let the pawns read Marx?","Now they don't like the class differences. They killed every oppressor and destroyed their symbols.  You both lost")
+                        for i in range (8):
+                            for j in range(8):
+                                if self.position[i][j]!=None:
+                                    if self.position[i][j][1:]!="pawn":self.position[i][j]=None
+                                    else: self.position[i][j]="rpawn"
+                        self.running=False
+                if self.moves[0]=='pc4' and len(self.moves)==1:
+                    tkm.showinfo("English?", "You remember that the English no longer have a queen, right?")
+                    self.position[7][3]=None
+                if self.moves[0]=='pd4':
+                        self.position[1][3]='wpawn'
+                        self.position[1][4]=None
+                        self.position[3][3]=None
+                        self.position[3][4]='wpawn'
+                        self.moves[0]='pe4'
+                        tkm.showinfo("What is this?", '''If you want to be considered a human you won't play such things.
+For now we will play something normal for you. But be careful! ''')
+                if self.moves[0]=='pe4':
+                    if len(self.moves)==2:
+                        if self.moves[1]=='pe6':
+                            tkm.showinfo("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
+                            running=False
+                        if self.moves[1]=='pa6':
+                            tkm.showinfo("Saint George's defence","The general-saint turns the pawn into a bishop")
+                            self.position[5][0]='bbishop'
+                        if self.moves[1]=='pd5':
+                            self.sk=1
+                            tkm.showinfo("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
+                    if len(self.moves)==3:
+                        if self.moves[-1][0]=='q':
+                            tkm.showinfo("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")
+                            self.piece_imb['wqueen']='wking.png'
+                            tkm.showinfo("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")
+                            self.position[0][2]=None
+                            self.position[0][5]=None
+                    if len(self.moves)==5:
+                        if self.moves[1:5]==['pe5','nf3','nc6','bc4']:
+                            tkm.showinfo("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
+                            self.piece_imb['wqueen']='Iqueen.png'
+                            self.piece_imb['wking']='Iking.png'
+                    if len(self.moves)==6:
+                            if ('nf3' in self.moves and 'nf6' in self.moves and 'nc3' in self.moves and 'nc6' in self.moves):
+                                tkm.showinfo("4 knights??", "You like the knights huh? Take some more!")
+                                self.position[0][0],self.position[0][7]='wnook','wnook'
+                                self.position[0][2],self.position[0][5]='wnight','wnight'
+                                self.position[7][0],self.position[7][7]='bnook','bnook'
+                                self.position[7][2],self.position[7][5]='bnight','bnight'                               
+                    if len(self.moves)==100:
+                        tkm.showinfo("You can't finish this game?","Try rock-paper-scissors to find the winner")
+                        self.running=False
+                rd100=randint(1,150)
+                if  self.grass==0 and (rd100//17==2):
+                    self.grass=1
+                    self.mrow, self.mcol= random_pos()
+                if ( self.book==0 and rd100>=148):
+                    self.book=1
+                    self.brow,self.bcol= random_pos()
             else:
-                chessboard.position[self.orow][self.ocol]=self.selected_piece
+                self.position[self.orow][self.ocol]=self.selected_piece
         self.movement=0
         self.selected_piece_position=None
-        self.selected_piece = None
+        self.selected_piece = None         
         self.draw_pieces()
-        
+
     def draw_pieces(self): 
-        self.clear_widgets()
-        self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=False)
-        self.add_widget(self.image)
+        self.clear_widgets()  # Αφαιρούμε όλα τα widgets από το MyLayout
+        self.add_widget(self.image)  # Προσθέτουμε ξανά την εικόνα του πίνακα
         for row in range(8):
             for col in range(8):
-                piece = chessboard.position[row][col]
+                piece = self.position[row][col]
                 if piece is not None:
-                    print(piece.name+str(piece.number)+str(row)+str(col))
                     x = col * self.width // 8
                     y = row * self.height // 8
-                    piece.image.pos = (x, y)
-                    self.add_widget(piece.image)
-                    
-class PongApp(App):
-    def build(self):
-        global window
-        window=MyLayout()
-        return window
-    
-class Piece():
-    global chessboard
-    Piecelex={'wpawn':0,'wnight':0,'wbishop':0,'wrook':0,'wnook':0,'wqueen':0,'wking':0,'bpawn':0,'bnight':0,'bbishop':0,'brook':0,'bnook':0,'bqueen':0,'bking':0,'rpawn':0}
-    checkers=0
-    def __init__(self, color, name, xposition, yposition,number,legalmovements,specialmoves=None):
-        self.color = color
-        self.name = name
-        self.xposition = xposition
-        self.yposition = 7-yposition
-        self.number=number
-        chessboard.add_piece(self)
-        self.image=Image(source=self.color[0]+self.name+'.png', size_hint=(0.125, 0.125))
-        self.legalmovements=legalmovements
-        self.Piecelex[self.color[0]+self.name]+=1
-        self.specialmoves=specialmoves
-        #self.initial_special()
-    def numbers(self,piecename):
-        return self.Piecelex[piecename]
-    def captured(self):
-        #chessboard.print_board()
-        global window
-        cp=self
-        window.remove_widget(cp.image)
-        for i in range(self.number,Piece.Piecelex[cp.color[0]+cp.name],1):
-            newp=globals()[f'{self.color[0]+self.name}{i+1}']
-            cp.xposition,cp.yposition=newp.xposition,newp.yposition
-            chessboard.position[cp.yposition][cp.xposition]=cp
-            cp=newp
-        Piece.Piecelex[self.color[0]+self.name]-=1
-##        for i in range (8):
-##            for j in range (8):
-##                if chessboard.position[i][j] is not None:
-##                    print (chessboard.position[i][j].name+str(chessboard.position[i][j].number))
-        return 0
-
-class Chessboard():
-    def __init__(self):
-        self.position = [[None for _ in range(8)] for _ in range(8)]
-
-    def add_piece(self, piece):
-        self.position[piece.yposition][piece.xposition] = piece
-
-    def print_board(self):
-        for row in self.position:
-                for item in row:
-                    if item==None:print("None")
-                    else: print(item.name)
-                    
-    def add_in_position(self,name,xposition,yposition,specialmoves=None):
-        movementslex={'wpawn':[0],'bpawn':[1],'king':[2],'night':[3],'rook':[4],'bishop':[5],'queen':[4,5],'nook':[3,4],'rpawn':[]}
-        number=wking1.numbers(name)+1
-        if name[1]=='p':globals()[f'{name}{number}']=Piece(name[0],name[1:],xposition,yposition,number,movementslex[name])
-        else:globals()[f'{name}{number}']=Piece(name[0],name[1:],xposition,yposition,number,movementslex[name[1:]],specialmoves)
-        self.position[yposition][xposition] = globals()[f'{name}{number}']
-        
-    def change_pieces(self,oldlist,newlist,specialmoves=None):
-        for i in range(8):
+                    piece_image = Image(source=self.piece_imb[piece] , size_hint=(0.125, 0.125),  pos=(x, y))
+                    self.add_widget(piece_image)  # Προσθέτουμε τις εικόνες των κομματιών
+        if self.grass==1:
+            mush=Image(source="mushrooms.png",size_hint=(0.125, 0.125),pos=(self.mcol*self.width//8,self.mrow*self.height//8))
+            self.add_widget(mush)
+        if self.book==1:
+            book=Image(source="book.png",size_hint=(0.125, 0.125),pos=(self.bcol*self.width//8,self.brow*self.height//8))
+            self.add_widget(book)
+    def legal(self, starting_position, ending_position):# ελέγχει την νομιμότητα της κίνησης
+        difference=ending_position-starting_position
+        self.wlist=[]
+        self.blist=[]
+        erow=(ending_position)//8#βρίσκει την αρχική θέση
+        ecol=(ending_position)%8
+        colors=['w','b']
+        #print(difference,ending_position+8)
+        for i in range(8):#προσθέτει στις λίστες τις θέσεις που βρίσκονται τα κομμάτια
             for j in range(8):
                 if self.position[i][j]!=None:
-                    c=self.position[i][j].color[0]
-                    for k in range(len(oldlist)):
-                        if self.position[i][j].name==oldlist[k]:
-                            self.position[i][j].captured()
-                            self.add_in_position(c+newlist[k],j,i,specialmoves)
-                            break
-                        
-def legal(piece,starting_position, ending_position):# ελέγχει την νομιμότητα της κίνησης
-    global player,sk,chessboard
-    difference=ending_position-starting_position
-    wlist,blist=pieceplaces()
-    erow=(ending_position)//8#βρίσκει την αρχική θέση
-    ecol=(ending_position)%8
-    sk=0
-    colors=['w','b']
-    letter={'w':wlist,'b':blist}
-    print(difference,ending_position,wlist,blist)
-    #white pawns
-    if 0 in piece.legalmovements and (ending_position not in wlist) and (ending_position not in blist):
-        if difference==+8:return 1
-        if difference==+16 and not sk and ending_position//8==3 and (ending_position-8 not in wlist) and (ending_position-8 not in blist): return 1
-    if 0 in piece.legalmovements and ending_position in blist and difference==+7 and (starting_position%8)!=0:return 1
-    if 0 in piece.legalmovements and ending_position in blist and difference==+9 and (starting_position%8)!=7:return 1
+                    if self.position[i][j][0]=='w': self.wlist.append(8*i+j)
+                    if self.position[i][j][0]=='b': self.blist.append(8*i+j)
+                
+        #white pawns
+        if self.selected_piece[:5]=="wpawn" and (ending_position not in self.wlist) and (ending_position not in self.blist):
+            if difference==8:return 1
+            if difference==16 and not self.sk and ending_position//8==3 and (ending_position-8 not in self.wlist) and (ending_position-8 not in self.blist): return 1
+        if self.selected_piece[:5]=="wpawn" and ending_position in self.blist and difference==7 and (starting_position%8)!=0:return 1
+        if self.selected_piece[:5]=="wpawn" and ending_position in self.blist and difference==9 and (starting_position%8)!=7:return 1
 
-    #black pawns
-    if 1 in piece.legalmovements and (ending_position not in wlist) and (ending_position not in blist):
-        if difference==-8:return 1
-        if difference==-16 and not sk and ending_position//8==4 and (ending_position+8 not in wlist) and (ending_position+8 not in blist):return 1
-    if 1 in piece.legalmovements and ending_position in wlist and difference==-7 and (starting_position%8)!=7:return 1
-    if 1 in piece.legalmovements and ending_position in wlist and difference==-9 and (starting_position%8)!=0:return 1
+        #black pawns
+        if self.selected_piece[:5]=="bpawn" and (ending_position not in self.wlist) and (ending_position not in self.blist):
+            if difference==-8:return 1
+            if difference==-16 and not self.sk and ending_position//8==4 and (ending_position+8 not in self.wlist) and (ending_position+8 not in self.blist):return 1
+        if self.selected_piece[:5]=="bpawn" and ending_position in self.wlist and difference==-7 and (starting_position%8)!=7:return 1
+        if self.selected_piece[:5]=="bpawn" and ending_position in self.wlist and difference==-9 and (starting_position%8)!=0:return 1
 
-    #kings
-    kingcheck=[-9,-8,-7,-1,1,7,8,9]
-    for n in kingcheck:
-        if 2 in piece.legalmovements and difference==int(n) and ending_position not in letter[piece.color[0]]: return 1
-    if  2 in piece.legalmovements:
-        if (piece.color[0]=='w' and starting_position==60 and (ending_position==62 or ending_position==58)) or(piece.color[0]=='b' and starting_position==4 and (ending_position==2 or ending_position==6)):
+        #kings
+        kingcheck=[-9,-8,-7,-1,1,7,8,9]
+        for n in kingcheck:
+            if self.selected_piece[:5]=='bking' and difference==int(n) and ending_position not in self.blist: return 1
+            if self.selected_piece[:5]=='wking' and difference==int(n) and ending_position not in self.wlist: return 1
+        if (self.selected_piece[:5]=='bking' and starting_position==60 and (ending_position==62 or ending_position==58)) or(self.selected_piece=='wking' and starting_position==4 and (ending_position==2 or ending_position==6)):
             tkm.showinfo("Are you afraid and trying to hide your king;"," There is a battle. You can't run away. Your king has to command the others.")
-        return 0
+            return 0
 
-    #knights, knooks and anti-queens
-    if 3 in piece.legalmovements:
-        if (ending_position not in letter[piece.color[0]]) :
+        #knights, knooks and anti-queens
+        if (self.selected_piece[:2]=='wn' and ending_position not in self.wlist) or (self.selected_piece[:6]=='wnight' and self.position[erow][ecol]=='wrook' ) or (self.selected_piece[:6]=='bnight' and self.position[erow][ecol]=='brook') or (self.selected_piece[:2]=='bn' and ending_position not in self.blist):
             if difference==-17 and starting_position//8>=2 and starting_position%8>0: return 1
             if difference==17 and starting_position//8<=5 and starting_position%8<7: return 1
             if difference==-15 and starting_position//8>=2 and starting_position%8<7: return 1
@@ -202,103 +234,149 @@ def legal(piece,starting_position, ending_position):# ελέγχει την νο
             if difference==10 and starting_position//8<=6 and starting_position%8<6: return 1
             if difference==-6 and starting_position//8>=1 and starting_position%8<6: return 1
             if difference==6 and starting_position//8<=6 and starting_position%8>1: return 1
-        elif chessboard.position[erow][ecol].name=="rook"and piece.specialmoves!='antiqueen':
-            return 1
-        
-    #rooks,nooks and queens
-    if 4 in piece.legalmovements:
-        if ending_position//8==starting_position//8:
-            if (difference*difference)>16 and sk==1:return 0
-            if difference>0:return lines(piece,starting_position,difference,1)
-            elif difference<0:return lines(piece,starting_position,difference,-1)        
-        if ending_position%8==starting_position%8:
-            if (difference*difference)>(32*32) and sk==1:return 0
-            if difference>0:return lines(piece,starting_position,difference,8)
-            elif difference<0:return lines(piece,starting_position,difference,-8)    
+            
+        #rooks,nooks and queens
+        if self.selected_piece[4]=='k' or self.selected_piece[1]=='q':
+            if ending_position//8==starting_position//8:
+                if (difference*difference)>16 and self.sk==1:return 0
+                if difference>0:return self.lines(starting_position,difference,1)
+                elif difference<0:return self.lines(starting_position,difference,-1)        
+            if ending_position%8==starting_position%8:
+                if (difference*difference)>(32*32) and self.sk==1:return 0
+                if difference>0:return self.lines(starting_position,difference,8)
+                elif difference<0:return self.lines(starting_position,difference,-8)    
 
-    #bishops and queens
-    if 5 in piece.legalmovements and starting_position%8!=(starting_position+difference)%8 and starting_position//8!=(starting_position+difference)//8:
-        ltrb=[-9,+9,-18,+18,-27,+27,-36,+36,-45,+45,-54,+54,-63,+63]
-        lbrt=[-7,+7,-14,+14,-21,+21,-28,+28,-35,+35,-42,+42,-48,+48]            
-        if difference in ltrb[0:(14-4*sk)] :
-            if difference>0:return lines(piece,starting_position,difference,9)
-            elif difference<0:return lines(piece,starting_position,difference,-9)        
-        if difference in lbrt[0:(14-4*sk)]:
-            if difference>0 :return lines(piece,starting_position,difference,7)
-            elif difference<0:return lines(piece,starting_position,difference,-7)    
-    return 0
-
-def lines(piece, starting_position, difference,dirr):#βρισκει αν υπάρχουν πιόνια σε γραμμές για μετακίνηση
-                                                                             #αξιωματικών, πύργων και βασιλισσών
-    wlist,blist=pieceplaces()
-    for i in range(dirr,difference,dirr):
-        if starting_position+i in blist or starting_position+i in wlist:return 0#αν βρει κομμάτι σε κάποια ενδιάμεση θέση
-    if starting_position+difference in blist and piece.color[0]=='b':return 0#αν βρει κομμάτι του ίδιου χρώματος στην τελική θέση
-    if starting_position+difference in wlist and piece.color[0]=='w':return 0    
-    return 1
-
-def pieceplaces():
-    global chessboard
-    wlist=[]
-    blist=[]
-    for i in range(8):#προσθέτει στις λίστες τις θέσεις που βρίσκονται τα κομμάτια
-        for j in range(8):
-            if chessboard.position[i][j]!=None:
-                if chessboard.position[i][j].color[0]=='w': wlist.append(8*i+j)
-                if chessboard.position[i][j].color[0]=='b': blist.append(8*i+j)
-    return wlist,blist
-
-def random_pos():
-    return randint(0,7),randint(0,7)
-
-def bcurses(selected_piece):#επιλέγει κατάρα μετά από συνάντηση αξιωματικών
-    rd=1#randint(1,7)
-    curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns which disappear",  "The meeting of the two bishops changes the knights and bishops",
-             "The meeting of the two bishops curses the queens which turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
-              "The meeting of the two bishops curses the pieces which turn into checkers pieces. They move the same as befoe"]
-    tkm.showinfo("Cursed",curselist[rd-1])
-    curses(selected_piece,rd)
+        #bishops and queens
+        if (self.selected_piece[1]=='b' or self.selected_piece[1]=='q') and starting_position%8!=(starting_position+difference)%8 and starting_position//8!=(starting_position+difference)//8:
+            if self.sk==0:
+                ltrb=[-9,+9,-18,+18,-27,+27,-36,+36,-45,+45,-54,+54,-63,+63]
+                lbrt=[-7,+7,-14,+14,-21,+21,-28,+28,-35,+35,-42,+42,-48,+48]
+            else:
+                ltrb=[-9,+9,-18,+18,-27,+27,-36,+36]
+                lbrt=[-7,+7,-14,+14,-21,+21,-28,+28]            
+            if difference in ltrb :
+                if difference>0:return self.lines(starting_position,difference,9)
+                elif difference<0:return self.lines(starting_position,difference,-9)        
+            if difference in lbrt:
+                if difference>0 :return self.lines(starting_position,difference,7)
+                elif difference<0:return self.lines(starting_position,difference,-7)    
+        return 0
     
-def curses(selected_piece,rd):
-    global chessboard
-    if rd==1:
-        for i in range (8):
-            if chessboard.position[1][i]== None: chessboard.add_in_position('bpawn',i,1)
-            if chessboard.position[6][i]==None:chessboard.add_in_position('wpawn',i,6)
-    if rd==2:
-        for i in range (8):
-            for j in range(8):
-                if chessboard.position[i][j]!=None:
-                    rd9=randint(1,9)
-                    if chessboard.position[i][j].name[0]=='p' and rd9>5:
-                        chessboard.position[i][j].captured()
-                        chessboard.position[i][j]=None
-    if rd==3:
-        chessboard.change_pieces(['bishop','night'],['night','bishop'])        
+    def lines(self,starting_position, difference,dirr):#βρισκει αν υπάρχουν πιόνια σε γραμμές για μετακίνηση
+                                                                                 #αξιωματικών, πύργων και βασιλισσών
+        for i in range(dirr,difference,dirr):
+            if starting_position+i in self.blist or starting_position+i in self.wlist:return 0#αν βρει κομμάτι σε κάποια ενδιάμεση θέση
+        if starting_position+difference in self.blist and self.selected_piece[0]=='b':return 0#αν βρει κομμάτι του ίδιου χρώματος στην τελική θέση
+        if starting_position+difference in self.wlist and self.selected_piece[0]=='w':return 0    
+        return 1
+    
+    def curses(self,rd):#πραγματοποιεί τις κατάρες
+        if rd==1:#βάζει πιόνια στις αρχικές θέσεις
+            for i in range (8):
+                if self.position[6][i]== None: self.position[6][i]='bpawn'
+                if self.position[1][i]==None: self.position[1][i]='wpawn'
+        elif rd==2:#εξαφανίζει κάποια πιόνια
+            for i in range (8):
+                for j in range(8):
+                    if self.position[i][j]!=None:
+                        rd9=randint(1,9)
+                        if self.position[i][j][1]=='p' and rd9>5:self.position[i][j]=None
+        elif rd==3:#αλλάζει θέση σε ίππους και αξιωματικούς
+            for i in range(8):
+                for j in range(8):
+                    if self.position[i][j]!=None:
+                        if self.position[i][j][1]=='b': self.position[i][j]=self.position[i][j][0]+'night'
+                        elif self.position[i][j][1:3]=='ni': self.position[i][j]=self.position[i][j][0]+'bishop'
+            self.selected_piece=self.selected_piece[0]+'night'
+        elif rd==4:#υποβαθμίζει τις βασίλισσες σε πύργους
+            for i in range(8):
+                for j in range(8):
+                    if self.position[i][j]!=None:
+                        if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'rook'
+        elif rd==5:#εμφανίζει τυχαία δύο πιόνια όχι στις ακριανές γραμμές
+            while True:
+                rd8_1,rd8_2=random_pos()
+                if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
+                    self.position[rd8_1][rd8_2]='wpawn'
+                    break
+            while True:
+                rd8_1,rd8_2=random_pos()
+                if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
+                    self.position[rd8_1][rd8_2]='bpawn'
+                    break
+        elif rd==6:#αλλάζει τις βασίλισσες σε άντιβασίλισσες
+            for i in range(8):
+                for j in range(8):
+                    if self.position[i][j]!=None:
+                        if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'niqueen'
+        elif rd==7:#κάνει τα πιόνια πούλια ντάμας
+            for key in self.piece_images:
+                self.piece_imb[key]=self.piece_imb[key][0]+'checkers.png'
 
-    if rd==4:
-        chessboard.change_pieces(['queen'],['rook'])
-
-    if rd==5:
-        while True:
-            rd8_1,rd8_2=random_pos()
-            if rd8_1>0 and rd8_1<7 and chessboard.position[rd8_1][rd8_2]==None:
-                chessboard.add_in_position('wpawn',rd8_2,rd8_1)
-                break
-        while True:
-            rd8_1,rd8_2=random_pos()
-            if rd8_1>0 and rd8_1<7 and chessboard.position[rd8_1][rd8_2]==None:
-                chessboard.add_in_position('bpawn',rd8_2,rd8_1)
-                break
-    if rd==6:
-        chessboard.change_pieces(['queen'],['night'],'antiqueen')
+    def bcurses(self):#επιλέγει κατάρα μετά από συνάντηση αξιωματικών
+        rd=6#randint(1,7)
+        curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns who disappear",  "The meeting of the two bishops changes the knights and bishops",
+                 "The meeting of the two bishops curses the queens who turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
+                  "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before"]
+        tkm.showinfo("Cursed",curselist[rd-1])
+        self.curses(rd)
         
-    if rd==7:
-        Piece.checkers=1
-        for i in range(8):
-            for j in range(8):
-                if chessboard.position[i][j]!=None:chessboard.position[i][j].image=pg.image.load(chessboard.position[i][j].color[0]+'checkers.png')
-        selected_piece.image=pg.image.load(selected_piece.color[0]+'checkers.png')
+    def enpassant (self, row,column):#ελέγχει αν υπάρχει αν πασάν
+        if self.position[row][column]=='wpawn':
+            ep=0
+            try:
+                if self.position[row][column-1]=='bpawn':
+                    self.position[row][column-1]=None
+                    ep+=1
+                if self.position[row][column+1]=='bpawn':
+                    self.position[row][column+1]=None
+                    ep+=1
+            except:pass
+            if ep==1:
+                self.position[row][column]=None
+                self.position[row-1][column]='bpawn'
+                self.player=(self.player+1)%2
+                self.moves.append('p'+self.columnletters[column]+'3')
+                ep=0
+                tkm.showinfo("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
+            if ep==2:
+                tkm.showinfo("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
+                self.position[row-1][column]='bbishop'
+                self.position[row][column]=None
+                self.player=(self.player+1)%2
+                self.moves.append('b'+self.columnletters[column]+'3')
+        if self.position[row][column]=='bpawn':
+            ep=0
+            try:
+                if self.position[row][column-1]=='wpawn':
+                    self.position[row][column-1]=None
+                    ep+=1
+                if self.position[row][column+1]=='wpawn':
+                    self.position[row][column+1]=None
+                    ep+=1
+            except:pass
+            if ep==1:
+                self.position[row][column]=None
+                self.position[row+1][column]='wpawn'
+                self.player=(self.player+1)%2
+                self.moves.append('p'+self.columnletters[column]+'6')
+                ep=0
+                tkm.showinfo("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
+            if ep==2:
+                tkm.showinfo("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
+                self.position[row+1][column]='wbishop'
+                self.moves.append('b'+self.columnletters[column]+'6')
+                self.position[row][column]=None
+                self.player=(self.player+1)%2
+            
+def random_pos():
+    return randint(0,7), randint(0,7)
 
+class PongApp(App):
+    def build(self):
+        global window
+        window=MyLayout()
+        return window
+    
 if __name__ == '__main__':
     PongApp().run()
