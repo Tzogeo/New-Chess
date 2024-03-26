@@ -3,7 +3,7 @@ from sys import exit
 import tkinter.messagebox as tkm
 from random import randint,shuffle
 
-class Piece():
+class Piece():#the objects of the class are the pieces on the board
     Piecelex={'wpawn':0,'wnight':0,'wbishop':0,'wrook':0,'wqueen':0,'wking':0,'bpawn':0,'bnight':0,'bbishop':0,'brook':0,'bqueen':0,'bking':0,'rpawn':0}
     checkers=0
     def __init__(self, color, name, xposition, yposition,number,legalmovements,specialmoves=None):
@@ -20,13 +20,13 @@ class Piece():
         self.initial_special()
     def numbers(self,piecename):
         return self.Piecelex[piecename]
-    def initial_special(self):
+    def initial_special(self):#some pieces have special moves/images
         if self.specialmoves=='antiqueen':
             self.image=pg.transform.rotate(pg.image.load(self.color[0]+'queen.png'),180)
         if self.checkers==1:
             self.image=pg.image.load(self.color[0]+'checkers.png')
 
-    def captured(self):
+    def captured(self):#changes the board once a piece is captured
         #chessboard.print_board()
         cp=self
         for i in range(self.number,Piece.Piecelex[cp.color[0]+cp.name],1):
@@ -38,27 +38,27 @@ class Piece():
         return 0
             
 
-class Chessboard():
+class Chessboard():#contains the chessboard and organises the movement/captures
     def __init__(self):
         self.position = [[None for _ in range(8)] for _ in range(8)]
 
     def add_piece(self, piece):
         self.position[piece.yposition][piece.xposition] = piece
 
-    def print_board(self):
+    def print_board(self):#prints the board (for testing reasons)
         for row in self.position:
                 for item in row:
                     if item==None:print("None")
                     else: print(item.name)
                     
-    def add_in_position(self,name,xposition,yposition,specialmoves=None):
+    def add_in_position(self,name,xposition,yposition,specialmoves=None):# adds a piece into the board
         movementslex={'wpawn':[0],'bpawn':[1],'king':[2],'night':[3],'rook':[4],'bishop':[5],'queen':[4,5],'nook':[3,4],'rpawn':[]}
         number=wking1.numbers(name)+1
         if name[1]=='p':globals()[f'{name}{number}']=Piece(name[0],name[1:],xposition,yposition,number,movementslex[name])
         else:globals()[f'{name}{number}']=Piece(name[0],name[1:],xposition,yposition,number,movementslex[name[1:]],specialmoves)
         self.position[yposition][xposition] = globals()[f'{name}{number}']
         
-    def change_pieces(self,oldlist,newlist,specialmoves=None):
+    def change_pieces(self,oldlist,newlist,specialmoves=None):#changes a type of pieces into anoother
         for i in range(8):
             for j in range(8):
                 if self.position[i][j]!=None:
@@ -70,7 +70,7 @@ class Chessboard():
                             break
 
                             
-def draw_pieces(screen):#σχεδιάζει τα κομμάτια
+def draw_pieces(screen):#shows the pieces
     for row in range(8):
         for col in range(8):
             piece = chessboard.position[row][col]
@@ -80,7 +80,7 @@ def draw_pieces(screen):#σχεδιάζει τα κομμάτια
                 screen.blit(piece.image, (x, y))
 def random_pos():
     return randint(0,7),randint(0,7)
-def pieceplaces():
+def pieceplaces():#adds the positions of the pieces into two list to check the legality of the moves
     wlist=[]
     blist=[]
     for i in range(8):#προσθέτει στις λίστες τις θέσεις που βρίσκονται τα κομμάτια
@@ -90,11 +90,11 @@ def pieceplaces():
                 if chessboard.position[i][j].color[0]=='b': blist.append(8*i+j)
     return wlist,blist
 
-def legal(piece,starting_position, ending_position):# ελέγχει την νομιμότητα της κίνησης
+def legal(piece,starting_position, ending_position):# checks the legality of a move
     global player,sk
     difference=ending_position-starting_position
     wlist,blist=pieceplaces()
-    erow=(ending_position)//8#βρίσκει την αρχική θέση
+    erow=(ending_position)//8#finds the initial position
     ecol=(ending_position)%8
     colors=['w','b']
     letter={'w':wlist,'b':blist}
@@ -157,16 +157,14 @@ def legal(piece,starting_position, ending_position):# ελέγχει την νο
             elif difference<0:return lines(piece,starting_position,difference,-7)    
     return 0
 
-def lines(piece, starting_position, difference,dirr):#βρισκει αν υπάρχουν πιόνια σε γραμμές για μετακίνηση
-                                                                             #αξιωματικών, πύργων και βασιλισσών
-    wlist,blist=pieceplaces()
+def lines(piece, starting_position, difference,dirr):#checks the line that a piece moves
     for i in range(dirr,difference,dirr):
-        if starting_position+i in blist or starting_position+i in wlist:return 0#αν βρει κομμάτι σε κάποια ενδιάμεση θέση
-    if starting_position+difference in blist and piece.color[0]=='b':return 0#αν βρει κομμάτι του ίδιου χρώματος στην τελική θέση
+        if starting_position+i in blist or starting_position+i in wlist:return 0#checks the intermediate squares
+    if starting_position+difference in blist and piece.color[0]=='b':return 0#checks the destination for pieces of the same color
     if starting_position+difference in wlist and piece.color[0]=='w':return 0    
     return 1
 
-def bcurses(selected_piece):#επιλέγει κατάρα μετά από συνάντηση αξιωματικών
+def bcurses(selected_piece):#curses in case a bishop captures another
     rd=randint(1,7)
     curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns which disappear",  "The meeting of the two bishops changes the knights and bishops",
              "The meeting of the two bishops curses the queens which turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
@@ -214,7 +212,7 @@ def curses(selected_piece,rd):
                 if chessboard.position[i][j]!=None:chessboard.position[i][j].image=pg.image.load(chessboard.position[i][j].color[0]+'checkers.png')
         selected_piece.image=pg.image.load(selected_piece.color[0]+'checkers.png')
 
-def enpassant (piece, row,column):#ελέγχει αν υπάρχει αν πασάν
+def enpassant (piece, row,column):# checks for en-peassant
     global player, moves, columnletters
     antilex={'b':'w','w':'b'}
     vallex={'w':-1,'b':+1}
@@ -281,7 +279,7 @@ while running:
             running = False
             pg.quit()
             exit()
-        elif event.type == pg.MOUSEBUTTONDOWN:#αν πατιέται ένα κομμάτι
+        elif event.type == pg.MOUSEBUTTONDOWN:#if the mousebutton is being pussed
             if event.button == 1:  
                 x, y = event.pos
                 col = x // 90
@@ -292,7 +290,7 @@ while running:
                         selected_piece_position = (row, col)
                         movement=1
                         chessboard.position[row][col] = None
-        elif event.type == pg.MOUSEBUTTONUP:#αν αφεθεί ένα κομμάτι
+        elif event.type == pg.MOUSEBUTTONUP:#if the mousebutton goes up
             if event.button == 1 and selected_piece is not None :
                 x, y = event.pos
                 ocol=col
@@ -300,16 +298,16 @@ while running:
                 col = x // 90
                 row = y // 90
                 enpas=0
-                if legal(selected_piece,8*orow+ocol,8*row+col) and movement:#αν η κίνηση ειναι νόμιμη και ειναι σειρά του παίχτη
-                    moves.append(selected_piece.name[0]+columnletters[col]+str(8-row))#προστίθεταιη κίνηση στην λίστα
-                    if chessboard.position[row][col]!=None:# αν υπάρχει κάποιο κομμάτι στην τελική θέση
+                if legal(selected_piece,8*orow+ocol,8*row+col) and movement:#if the movement is legal
+                    moves.append(selected_piece.name[0]+columnletters[col]+str(8-row))#adds the move to the list
+                    if chessboard.position[row][col]!=None:# if there is a piece captured
                         chessboard.position[row][col].captured()
                         if selected_piece.name[0]=='b' and chessboard.position[row][col].name[0]=='b':bcurses(selected_piece)
-                        if chessboard.position[row][col].name=='king':#ελέγχει αν φαγώθηκε ο βασιλιάς
+                        if chessboard.position[row][col].name=='king':#checks for the capture of the king
                             tkm.showinfo("You lost", "They captured your king")
                             pg.quit()
                             exit()
-                    promotions=['queen','rook','bishop','night']#αν κάποιο πιονάκι φτάσει στην τελευταία σειρά
+                    promotions=['queen','rook','bishop','night']#if a pawn reaches the promotion row
                     shuffle(promotions)
                     if (selected_piece.color[0]+selected_piece.name[0]=='wp' and row==0) or (selected_piece.color[0]+selected_piece.name[0]=='bp' and row==7):
                         tkm.showinfo("Don't you fill lucky?","The promotion is random")
@@ -388,7 +386,6 @@ For now we will play something normal for you. But be careful! ''')
                                 wqueen1.image=pg.image.load("Iqueen.png")
                                 wking1.image=pg.image.load("Iking.png")
                         if len(moves)==6:
-                            #print(moves)
                             if ('nf3' in moves and 'nf6' in moves and 'nc3' in moves and 'nc6' in moves):
                                 tkm.showinfo("4 knights??", "You like the knight huh? Take some more!")
                                 chessboard.change_pieces(['bishop'],['night'])
