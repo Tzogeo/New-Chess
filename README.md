@@ -7,7 +7,8 @@ It's a new variant of chess for two players where things like the name of an ope
 There are three versions of the game which are almost identical in terms of gameplay but have differences in the type of programming and user interface.
 * version 1: uses pygame and tkinter.messagebox and is built with procedural programming as it mostly uses functions. It is the simplest version and it has limitations on possible improvements
 * version 2: uses pygame and is built with object orientet programming. It is more complex that version 1 but the classes and their objects can help to implement more complex ideas and twists
-* version 3: it is built based on version one(procedural programming) but uses the kivy library instead of pygame. This allows the ui to be more flexible and  compatible with smartphones(as of now it works on android phones, contact me for the .apk file)
+* version 3: it is built based on version one(procedural programming) but uses the kivy library instead of pygame. This allows the ui to be more flexible and  compatible with smartphones(as of now it works on android phones, contact me for the .apk file).
+
 When not specified every part of the read-me refers to all three versions.
 The users can play on any of the versions they want.
 
