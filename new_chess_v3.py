@@ -1,22 +1,21 @@
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
-import tkinter.messagebox as tkm
 from random import randint,shuffle
-
+from kivypopup import show_popup
 class MyLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(MyLayout, self).__init__(**kwargs)
         self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=False)
         self.add_widget(self.image)
-        self.piece_images = {#contains the images of the pieces
+        self.piece_images = {#περιέχει τις εικόνες των κομματιών
         }
         self.piece_imb={}
         self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wnook','bnook','wniqueen','bniqueen','rpawn']
         for item in self.lexlist:
             self.piece_imb[item]=item+'.png'
             self.piece_images[item]= Image(source=self.piece_imb[item], size_hint=(0.125, 0.125))
-        self.position = [#contains the positions of the pieces
+        self.position = [#περιέχει τις θέσεις των κομματιών
         ['wrook', 'wnight', 'wbishop', 'wqueen', 'wking', 'wbishop', 'wnight', 'wrook'],         # 00,01,02,03,04,05,06,07
         ['wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn'],        # 08,09,10,11,12,13,14,15
         [None, None, None, None, None, None, None, None],                                         # 16,17,18,19,20,21,22,23
@@ -73,39 +72,39 @@ class MyLayout(FloatLayout):
             self.col=int(touch.x//(self.width /8))
             self.row=int(touch.y//(self.height/8))
             if self.legal(8*self.orow+self.ocol,8*self.row+self.col) and self.row>=0 and self.col >=0:
-                self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#adds the move to the list
+                self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#προστίθεταιη κίνηση στην λίστα
                 self.player=(self.player+1)%2
                 if self.position[self.row][self.col]!=None :# αν υπάρχει κάποιο κομμάτι στην τελική θέση
                     if self.selected_piece[1]=='b' and self.position[self.row][self.col][1]=='b':
                         self.bcurses()
                     if self.position[self.row][self.col][1]=='k':#ελέγχει αν φαγώθηκε ο βασιλιάς
-                        tkm.showinfo("You lost", "They captured your king")
+                        show_popup("You lost", "They captured your king")
                         self.running=False
                     if self.selected_piece[1]=='n' and self.position[self.row][self.col][1]=='r' and self.selected_piece[0]==self.position[self.row][self.col][0]:self.selected_piece=self.selected_piece[0]+"nook"
-                    promotions=['queen','rook','bishop','night']
+                    promotions=['queen','rook','bishop','night']#αν κάποιο πιονάκι φτάσει στην τελευταία σειρά
                     shuffle(promotions)
                     if self.selected_piece[:2]=='wp' and self.row==7 :
-                        tkm.showinfo("Don't you fill lucky?","The promotion is random")
+                        show_popup("Don't you fill lucky?","The promotion is random")
                         self.selected_piece='w'+promotions[1]
                     if self.selected_piece[:2]=="bp" and self.row==0:
-                        tkm.showinfo("Don't you fill lucky?","The promotion is random")
+                        show_popup("Don't you fill lucky?","The promotion is random")
                         self.selected_piece='b'+promotions[2]    
                 self.position[self.row][self.col]=self.selected_piece
-                if self.selected_piece[1]=='p':#checks for enpassant
+                if self.selected_piece[1]=='p':#ελέγχει για αν-πασάν
                     if abs(self.orow-self.row)==2: self.enpassant(self.row,self.col)
                 #interesting openings
                 if self.moves[-1]=='nc4':
-                    tkm.showinfo("C4 is explosive!", "This tile is very explosive and your ex-knight-looking piece hit it")
+                    show_popup("C4 is explosive!", "This tile is very explosive and your ex-knight-looking piece hit it")
                     self.position[3][2]=None
                 if self.position[self.mrow][self.mcol]!=None:
                     if self.position[self.mrow][self.mcol][1]=='n' and self.grass==1:
-                        tkm.showinfo("The knight just ate the mushroom","You didn't teach it to not eat everything. Now it thinks it belongs to the other team")
+                        show_popup("The knight just ate the mushroom","You didn't teach it to not eat everything. Now it thinks it belongs to the other team")
                         if self.position[self.mrow][self.mcol][0]=='w':self.position[self.mrow][self.mcol]='b'+self.position[self.mrow][self.mcol][1:]
                         else:self.position[self.mrow][self.mcol]='w'+self.position[self.mrow][self.mcol][1:]
                         self.grass=0
                 if self.position[self.brow][self.bcol]!=None:                
                     if self.position[self.brow][self.bcol][1]=="p" and self.book==1:
-                        tkm.showinfo("Why did you let the pawns read Marx?","Now they don't like the class differences. They killed every oppressor and destroyed their symbols.  You both lost")
+                        show_popup("Why did you let the pawns read Marx?","Now they don't like the class differences. They killed every oppressor and destroyed their symbols.  You both lost")
                         for i in range (8):
                             for j in range(8):
                                 if self.position[i][j]!=None:
@@ -113,48 +112,46 @@ class MyLayout(FloatLayout):
                                     else: self.position[i][j]="rpawn"
                         self.running=False
                 if self.moves[0]=='pc4' and len(self.moves)==1:
-                    tkm.showinfo("English?", "You remember that the English no longer have a queen, right?")
-                    self.position[7][3]=None
+                    show_popup("English?", "You remember that the English no longer have a queen, right?")
+                    self.position[0][3]=None
                 if self.moves[0]=='pd4':
                         self.position[1][3]='wpawn'
                         self.position[1][4]=None
                         self.position[3][3]=None
                         self.position[3][4]='wpawn'
                         self.moves[0]='pe4'
-                        tkm.showinfo("What is this?", '''If you want to be considered a human you won't play such things.
+                        show_popup("What is this?", '''If you want to be considered a human you won't play such things.
 For now we will play something normal for you. But be careful! ''')
                 if self.moves[0]=='pe4':
                     if len(self.moves)==2:
                         if self.moves[1]=='pe6':
-                            tkm.showinfo("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
+                            show_popup("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
                             running=False
                         if self.moves[1]=='pa6':
-                            tkm.showinfo("Saint George's defence","The general-saint turns the pawn into a bishop")
+                            show_popup("Saint George's defence","The general-saint turns the pawn into a bishop")
                             self.position[5][0]='bbishop'
                         if self.moves[1]=='pd5':
                             self.sk=1
-                            tkm.showinfo("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
+                            show_popup("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
                     if len(self.moves)==3:
                         if self.moves[-1][0]=='q':
-                            tkm.showinfo("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")
+                            show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")
                             self.piece_imb['wqueen']='wking.png'
-                            tkm.showinfo("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")
+                            show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")
                             self.position[0][2]=None
                             self.position[0][5]=None
                     if len(self.moves)==5:
                         if self.moves[1:5]==['pe5','nf3','nc6','bc4']:
-                            tkm.showinfo("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
+                            show_popup("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
                             self.piece_imb['wqueen']='Iqueen.png'
                             self.piece_imb['wking']='Iking.png'
                     if len(self.moves)==6:
                             if ('nf3' in self.moves and 'nf6' in self.moves and 'nc3' in self.moves and 'nc6' in self.moves):
-                                tkm.showinfo("4 knights??", "You like the knights huh? Take some more!")
-                                self.position[0][0],self.position[0][7]='wnook','wnook'
+                                show_popup("4 knights??", "You like the knights huh? Take some more!")
                                 self.position[0][2],self.position[0][5]='wnight','wnight'
-                                self.position[7][0],self.position[7][7]='bnook','bnook'
                                 self.position[7][2],self.position[7][5]='bnight','bnight'                               
                     if len(self.moves)==100:
-                        tkm.showinfo("You can't finish this game?","Try rock-paper-scissors to find the winner")
+                        show_popup("You can't finish this game?","Try rock-paper-scissors to find the winner")
                         self.running=False
                 rd100=randint(1,150)
                 if  self.grass==0 and (rd100//17==2):
@@ -180,23 +177,21 @@ For now we will play something normal for you. But be careful! ''')
                     x = col * self.width // 8
                     y = row * self.height // 8
                     piece_image = Image(source=self.piece_imb[piece] , size_hint=(0.125, 0.125),  pos=(x, y))
-                    self.add_widget(piece_image) 
+                    self.add_widget(piece_image)  
         if self.grass==1:
             mush=Image(source="mushrooms.png",size_hint=(0.125, 0.125),pos=(self.mcol*self.width//8,self.mrow*self.height//8))
             self.add_widget(mush)
         if self.book==1:
             book=Image(source="book.png",size_hint=(0.125, 0.125),pos=(self.bcol*self.width//8,self.brow*self.height//8))
             self.add_widget(book)
-            
-    def legal(self, starting_position, ending_position):# checks the legality of the movemet
+    def legal(self, starting_position, ending_position):# checks for the legality of the move
         difference=ending_position-starting_position
         self.wlist=[]
         self.blist=[]
-        erow=(ending_position)//8# finds the initial position
+        erow=(ending_position)//8
         ecol=(ending_position)%8
         colors=['w','b']
-        #print(difference,ending_position+8)
-        for i in range(8):#finds the squares with the pieces
+        for i in range(8):#adds the position of the pieces in two lists
             for j in range(8):
                 if self.position[i][j]!=None:
                     if self.position[i][j][0]=='w': self.wlist.append(8*i+j)
@@ -222,11 +217,11 @@ For now we will play something normal for you. But be careful! ''')
             if self.selected_piece[:5]=='bking' and difference==int(n) and ending_position not in self.blist: return 1
             if self.selected_piece[:5]=='wking' and difference==int(n) and ending_position not in self.wlist: return 1
         if (self.selected_piece[:5]=='bking' and starting_position==60 and (ending_position==62 or ending_position==58)) or(self.selected_piece=='wking' and starting_position==4 and (ending_position==2 or ending_position==6)):
-            tkm.showinfo("Are you afraid and trying to hide your king;"," There is a battle. You can't run away. Your king has to command the others.")
+            show_popup("Are you afraid and trying to hide your king;"," There is a battle. You can't run away. Your king has to command the others.")
             return 0
 
-        #knights, knooks and anti-queens
-        if (self.selected_piece[:2]=='wn' and ending_position not in self.wlist) or (self.selected_piece[:6]=='wnight' and self.position[erow][ecol]=='wrook' ) or (self.selected_piece[:6]=='bnight' and self.position[erow][ecol]=='brook') or (self.selected_piece[:2]=='bn' and ending_position not in self.blist):
+        #knights and anti-queens
+        if (self.selected_piece[:2]=='wn' and ending_position not in self.wlist) or (self.selected_piece[:2]=='bn' and ending_position not in self.blist):
             if difference==-17 and starting_position//8>=2 and starting_position%8>0: return 1
             if difference==17 and starting_position//8<=5 and starting_position%8<7: return 1
             if difference==-15 and starting_position//8>=2 and starting_position%8<7: return 1
@@ -236,7 +231,7 @@ For now we will play something normal for you. But be careful! ''')
             if difference==-6 and starting_position//8>=1 and starting_position%8<6: return 1
             if difference==6 and starting_position//8<=6 and starting_position%8>1: return 1
             
-        #rooks,nooks and queens
+        #rooks and queens
         if self.selected_piece[4]=='k' or self.selected_piece[1]=='q':
             if ending_position//8==starting_position//8:
                 if (difference*difference)>16 and self.sk==1:return 0
@@ -263,15 +258,16 @@ For now we will play something normal for you. But be careful! ''')
                 elif difference<0:return self.lines(starting_position,difference,-7)    
         return 0
     
-    def lines(self,starting_position, difference,dirr):#checks for pieces in the line that a piece might use
+    def lines(self,starting_position, difference,dirr):#checks for pieces in the line another piece wants to move
+                                                                                
         for i in range(dirr,difference,dirr):
             if starting_position+i in self.blist or starting_position+i in self.wlist:return 0
         if starting_position+difference in self.blist and self.selected_piece[0]=='b':return 0
         if starting_position+difference in self.wlist and self.selected_piece[0]=='w':return 0    
         return 1
     
-    def curses(self,rd):#curses
-        if rd==1:#spawns pawns in their initial position
+    def curses(self,rd):
+        if rd==1:#spawns pawns in their original position
             for i in range (8):
                 if self.position[6][i]== None: self.position[6][i]='bpawn'
                 if self.position[1][i]==None: self.position[1][i]='wpawn'
@@ -280,20 +276,20 @@ For now we will play something normal for you. But be careful! ''')
                 for j in range(8):
                     if self.position[i][j]!=None:
                         rd9=randint(1,9)
-                        if self.position[i][j][1]=='p' and rd9>5:self.position[i][j]=None
-        elif rd==3:#turns the bishops into knights and vice-versa
+                        if self.position[i][j][1]=='p' and rd9>6:self.position[i][j]=None
+        elif rd==3:#changes bishops into knights and vice versa
             for i in range(8):
                 for j in range(8):
                     if self.position[i][j]!=None:
                         if self.position[i][j][1]=='b': self.position[i][j]=self.position[i][j][0]+'night'
                         elif self.position[i][j][1:3]=='ni': self.position[i][j]=self.position[i][j][0]+'bishop'
             self.selected_piece=self.selected_piece[0]+'night'
-        elif rd==4:#turns the queens into rooks
+        elif rd==4:#demotes the queens into rooks
             for i in range(8):
                 for j in range(8):
                     if self.position[i][j]!=None:
                         if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'rook'
-        elif rd==5:#spawns two pawns randomly (not on the first/last rank)
+        elif rd==5:#spawns two pawns randomly
             while True:
                 rd8_1,rd8_2=random_pos()
                 if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
@@ -304,24 +300,24 @@ For now we will play something normal for you. But be careful! ''')
                 if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
                     self.position[rd8_1][rd8_2]='bpawn'
                     break
-        elif rd==6:#turns the queens into antiqueens
+        elif rd==6:#turns the queens into anti-queens
             for i in range(8):
                 for j in range(8):
                     if self.position[i][j]!=None:
                         if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'niqueen'
-        elif rd==7:#turns the images of the pieces into images of checkers
+        elif rd==7:#turns the pieces into checkers pieces
             for key in self.piece_images:
                 self.piece_imb[key]=self.piece_imb[key][0]+'checkers.png'
 
-    def bcurses(self):#chooses the curse after the capture of a bishop from another
-        rd=6#randint(1,7)
+    def bcurses(self):#chooses a curse
+        rd=7#randint(1,7)
         curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns who disappear",  "The meeting of the two bishops changes the knights and bishops",
                  "The meeting of the two bishops curses the queens who turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
                   "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before"]
-        tkm.showinfo("Cursed",curselist[rd-1])
+        show_popup("Cursed",curselist[rd-1])
         self.curses(rd)
         
-    def enpassant (self, row,column):#checks for en passant
+    def enpassant (self, row,column):#checks for enpassant
         if self.position[row][column]=='wpawn':
             ep=0
             try:
@@ -338,9 +334,9 @@ For now we will play something normal for you. But be careful! ''')
                 self.player=(self.player+1)%2
                 self.moves.append('p'+self.columnletters[column]+'3')
                 ep=0
-                tkm.showinfo("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
+                show_popup("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
             if ep==2:
-                tkm.showinfo("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
+                show_popup("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
                 self.position[row-1][column]='bbishop'
                 self.position[row][column]=None
                 self.player=(self.player+1)%2
@@ -361,9 +357,9 @@ For now we will play something normal for you. But be careful! ''')
                 self.player=(self.player+1)%2
                 self.moves.append('p'+self.columnletters[column]+'6')
                 ep=0
-                tkm.showinfo("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
+                show_popup("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
             if ep==2:
-                tkm.showinfo("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
+                show_popup("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
                 self.position[row+1][column]='wbishop'
                 self.moves.append('b'+self.columnletters[column]+'6')
                 self.position[row][column]=None
@@ -372,11 +368,11 @@ For now we will play something normal for you. But be careful! ''')
 def random_pos():
     return randint(0,7), randint(0,7)
 
-class PongApp(App):
+class NewChessApp(App):
     def build(self):
         global window
         window=MyLayout()
         return window
     
 if __name__ == '__main__':
-    PongApp().run()
+    NewChessApp().run()
