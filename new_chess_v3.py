@@ -11,7 +11,7 @@ class MyLayout(FloatLayout):
         self.piece_images = {#περιέχει τις εικόνες των κομματιών
         }
         self.piece_imb={}
-        self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wnook','bnook','wniqueen','bniqueen','rpawn']
+        self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wniqueen','bniqueen','rpawn']
         for item in self.lexlist:
             self.piece_imb[item]=item+'.png'
             self.piece_images[item]= Image(source=self.piece_imb[item], size_hint=(0.125, 0.125))
@@ -135,9 +135,9 @@ For now we will play something normal for you. But be careful! ''')
                             show_popup("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
                     if len(self.moves)==3:
                         if self.moves[-1][0]=='q':
-                            show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")
+                            show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")#this message will appear second
                             self.piece_imb['wqueen']='wking.png'
-                            show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")
+                            show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")#this message will appear first
                             self.position[0][2]=None
                             self.position[0][5]=None
                     if len(self.moves)==5:
@@ -307,10 +307,10 @@ For now we will play something normal for you. But be careful! ''')
                         if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'niqueen'
         elif rd==7:#turns the pieces into checkers pieces
             for key in self.piece_images:
-                self.piece_imb[key]=self.piece_imb[key][0]+'checkers.png'
+                self.piece_imb[key]=key[0]+'checkers.png'
 
     def bcurses(self):#chooses a curse
-        rd=7#randint(1,7)
+        rd=randint(1,7)
         curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns who disappear",  "The meeting of the two bishops changes the knights and bishops",
                  "The meeting of the two bishops curses the queens who turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
                   "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before"]
