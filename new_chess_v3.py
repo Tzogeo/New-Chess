@@ -8,14 +8,14 @@ class MyLayout(FloatLayout):
         super(MyLayout, self).__init__(**kwargs)
         self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=False)
         self.add_widget(self.image)
-        self.piece_images = {#περιέχει τις εικόνες των κομματιών
+        self.piece_images = {
         }
         self.piece_imb={}
         self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wniqueen','bniqueen','rpawn']
         for item in self.lexlist:
             self.piece_imb[item]=item+'.png'
             self.piece_images[item]= Image(source=self.piece_imb[item], size_hint=(0.125, 0.125))
-        self.position = [#περιέχει τις θέσεις των κομματιών
+        self.position = [
         ['wrook', 'wnight', 'wbishop', 'wqueen', 'wking', 'wbishop', 'wnight', 'wrook'],         # 00,01,02,03,04,05,06,07
         ['wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn'],        # 08,09,10,11,12,13,14,15
         [None, None, None, None, None, None, None, None],                                         # 16,17,18,19,20,21,22,23
@@ -40,7 +40,6 @@ class MyLayout(FloatLayout):
         self.book=0
         self.sk=0
     def on_size(self, *args):
-        #self.img2.pos = (self.x2*self.width / 8 , self.y2*self.height / 8)
         self.draw_pieces()        
     def on_touch_down(self, touch):
         if not self.running:return 0
@@ -51,7 +50,7 @@ class MyLayout(FloatLayout):
             if (self.selected_piece[0]=="w" and self.player==0) or (self.selected_piece[0]=="b" and self.player==1):            
                 self.selected_piece_position = (self.row, self.col)
                 self.movement=1
-                self.selected_imagen = self.piece_imb[self.selected_piece]  # Ορισμός της εικόνας του επιλεγμένου κομματιού
+                self.selected_imagen = self.piece_imb[self.selected_piece]  # The image of the selected piece
                 self.selected_image=Image(source=self.selected_imagen, size_hint=(0.125, 0.125),pos=(self.col*self.width/8,self.row*self.height/8))
                 self.position[self.row][self.col] = None
                 self.draw_pieces()
@@ -72,27 +71,40 @@ class MyLayout(FloatLayout):
             self.col=int(touch.x//(self.width /8))
             self.row=int(touch.y//(self.height/8))
             if self.legal(8*self.orow+self.ocol,8*self.row+self.col) and self.row>=0 and self.col >=0:
-                self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#προστίθεταιη κίνηση στην λίστα
+                self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#adds the move to the list
                 self.player=(self.player+1)%2
-                if self.position[self.row][self.col]!=None :# αν υπάρχει κάποιο κομμάτι στην τελική θέση
+                if self.suremessage==1:
+                    show_popup("Are you sure?", "Seems suspicious")#just shows this message
+                    self.suremessage=0
+                if self.position[self.row][self.col]!=None :# checks for a capture
                     if self.selected_piece[1]=='b' and self.position[self.row][self.col][1]=='b':
                         self.bcurses()
-                    if self.position[self.row][self.col][1]=='k':#ελέγχει αν φαγώθηκε ο βασιλιάς
+                    if self.position[self.row][self.col][1]=='k':#checks for the capture of a king
                         show_popup("You lost", "They captured your king")
                         self.running=False
-                    if self.selected_piece[1]=='n' and self.position[self.row][self.col][1]=='r' and self.selected_piece[0]==self.position[self.row][self.col][0]:self.selected_piece=self.selected_piece[0]+"nook"
-                    promotions=['queen','rook','bishop','night']#αν κάποιο πιονάκι φτάσει στην τελευταία σειρά
-                    shuffle(promotions)
-                    if self.selected_piece[:2]=='wp' and self.row==7 :
-                        show_popup("Don't you fill lucky?","The promotion is random")
-                        self.selected_piece='w'+promotions[1]
-                    if self.selected_piece[:2]=="bp" and self.row==0:
-                        show_popup("Don't you fill lucky?","The promotion is random")
-                        self.selected_piece='b'+promotions[2]    
+                promotions=['queen','rook','bishop','night']#for pawns that reach the last rank
+                shuffle(promotions)
+                if self.selected_piece[:2]=='wp' and self.row==7 :
+                    print("true")
+                    show_popup("Don't you fill lucky?","The promotion is random")
+                    self.selected_piece='w'+promotions[1]
+                if self.selected_piece[:2]=="bp" and self.row==0:
+                    print("true")
+                    show_popup("Don't you fill lucky?","The promotion is random")
+                    self.selected_piece='b'+promotions[2]    
                 self.position[self.row][self.col]=self.selected_piece
-                if self.selected_piece[1]=='p':#ελέγχει για αν-πασάν
+                if self.selected_piece[1]=='p':#checks for en-passant
                     if abs(self.orow-self.row)==2: self.enpassant(self.row,self.col)
                 #interesting openings
+                if self.selected_piece[1]=="q" and len(self.moves)<=6:
+                    for i in range(8):
+                        for j in range(8):
+                            if self.position[i][j]!=None:
+                                if self.position[i][j][0]==self.selected_piece[0] and self.position[i][j][1]=="b":
+                                    self.position[i][j]=None
+                    show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")#this message will appear second
+                    self.piece_imb[self.selected_piece]=self.selected_piece[0]+'king.png'
+                    show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")#this message will appear first
                 if self.moves[-1]=='nc4':
                     show_popup("C4 is explosive!", "This tile is very explosive and your ex-knight-looking piece hit it")
                     self.position[3][2]=None
@@ -126,20 +138,13 @@ For now we will play something normal for you. But be careful! ''')
                     if len(self.moves)==2:
                         if self.moves[1]=='pe6':
                             show_popup("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
-                            running=False
+                            self.running=False
                         if self.moves[1]=='pa6':
                             show_popup("Saint George's defence","The general-saint turns the pawn into a bishop")
                             self.position[5][0]='bbishop'
                         if self.moves[1]=='pd5':
                             self.sk=1
                             show_popup("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
-                    if len(self.moves)==3:
-                        if self.moves[-1][0]=='q':
-                            show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")#this message will appear second
-                            self.piece_imb['wqueen']='wking.png'
-                            show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")#this message will appear first
-                            self.position[0][2]=None
-                            self.position[0][5]=None
                     if len(self.moves)==5:
                         if self.moves[1:5]==['pe5','nf3','nc6','bc4']:
                             show_popup("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
@@ -160,6 +165,7 @@ For now we will play something normal for you. But be careful! ''')
                 if ( self.book==0 and rd100>=148):
                     self.book=1
                     self.brow,self.bcol= random_pos()
+                if rd100==66:self.suremessage=1
             else:
                 self.position[self.orow][self.ocol]=self.selected_piece
         self.movement=0
