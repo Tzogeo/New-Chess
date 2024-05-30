@@ -39,6 +39,7 @@ class MyLayout(FloatLayout):
         self.grass=0
         self.book=0
         self.sk=0
+        self.suremessage=0
     def on_size(self, *args):
         self.draw_pieces()        
     def on_touch_down(self, touch):
@@ -82,29 +83,14 @@ class MyLayout(FloatLayout):
                     if self.position[self.row][self.col][1]=='k':#checks for the capture of a king
                         show_popup("You lost", "They captured your king")
                         self.running=False
-                promotions=['queen','rook','bishop','night']#for pawns that reach the last rank
-                shuffle(promotions)
-                if self.selected_piece[:2]=='wp' and self.row==7 :
-                    print("true")
+                if (self.selected_piece[:2]=='wp' and self.row==7) or ( self.selected_piece[:2]=="bp" and self.row==0):
+                    promotions=['queen','rook','bishop','night']#for pawns that reach the last rank
+                    shuffle(promotions)
                     show_popup("Don't you fill lucky?","The promotion is random")
-                    self.selected_piece='w'+promotions[1]
-                if self.selected_piece[:2]=="bp" and self.row==0:
-                    print("true")
-                    show_popup("Don't you fill lucky?","The promotion is random")
-                    self.selected_piece='b'+promotions[2]    
+                    self.selected_piece=self.selected_piece[0]+promotions[1]
                 self.position[self.row][self.col]=self.selected_piece
                 if self.selected_piece[1]=='p':#checks for en-passant
                     if abs(self.orow-self.row)==2: self.enpassant(self.row,self.col)
-                #interesting openings
-                if self.selected_piece[1]=="q" and len(self.moves)<=6:
-                    for i in range(8):
-                        for j in range(8):
-                            if self.position[i][j]!=None:
-                                if self.position[i][j][0]==self.selected_piece[0] and self.position[i][j][1]=="b":
-                                    self.position[i][j]=None
-                    show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")#this message will appear second
-                    self.piece_imb[self.selected_piece]=self.selected_piece[0]+'king.png'
-                    show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")#this message will appear first
                 if self.moves[-1]=='nc4':
                     show_popup("C4 is explosive!", "This tile is very explosive and your ex-knight-looking piece hit it")
                     self.position[3][2]=None
@@ -123,41 +109,10 @@ class MyLayout(FloatLayout):
                                     if self.position[i][j][1:]!="pawn":self.position[i][j]=None
                                     else: self.position[i][j]="rpawn"
                         self.running=False
-                if self.moves[0]=='pc4' and len(self.moves)==1:
-                    show_popup("English?", "You remember that the English no longer have a queen, right?")
-                    self.position[0][3]=None
-                if self.moves[0]=='pd4':
-                        self.position[1][3]='wpawn'
-                        self.position[1][4]=None
-                        self.position[3][3]=None
-                        self.position[3][4]='wpawn'
-                        self.moves[0]='pe4'
-                        show_popup("What is this?", '''If you want to be considered a human you won't play such things.
-For now we will play something normal for you. But be careful! ''')
-                if self.moves[0]=='pe4':
-                    if len(self.moves)==2:
-                        if self.moves[1]=='pe6':
-                            show_popup("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
-                            self.running=False
-                        if self.moves[1]=='pa6':
-                            show_popup("Saint George's defence","The general-saint turns the pawn into a bishop")
-                            self.position[5][0]='bbishop'
-                        if self.moves[1]=='pd5':
-                            self.sk=1
-                            show_popup("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
-                    if len(self.moves)==5:
-                        if self.moves[1:5]==['pe5','nf3','nc6','bc4']:
-                            show_popup("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
-                            self.piece_imb['wqueen']='Iqueen.png'
-                            self.piece_imb['wking']='Iking.png'
-                    if len(self.moves)==6:
-                            if ('nf3' in self.moves and 'nf6' in self.moves and 'nc3' in self.moves and 'nc6' in self.moves):
-                                show_popup("4 knights??", "You like the knights huh? Take some more!")
-                                self.position[0][2],self.position[0][5]='wnight','wnight'
-                                self.position[7][2],self.position[7][5]='bnight','bnight'                               
-                    if len(self.moves)==100:
-                        show_popup("You can't finish this game?","Try rock-paper-scissors to find the winner")
-                        self.running=False
+                self.interesting_openings()                   
+                if len(self.moves)==100:
+                    show_popup("You can't finish this game?","Try rock-paper-scissors to find the winner")
+                    self.running=False
                 rd100=randint(1,150)
                 if  self.grass==0 and (rd100//17==2):
                     self.grass=1
@@ -190,6 +145,7 @@ For now we will play something normal for you. But be careful! ''')
         if self.book==1:
             book=Image(source="book.png",size_hint=(0.125, 0.125),pos=(self.bcol*self.width//8,self.brow*self.height//8))
             self.add_widget(book)
+            
     def legal(self, starting_position, ending_position):# checks for the legality of the move
         difference=ending_position-starting_position
         self.wlist=[]
@@ -370,7 +326,50 @@ For now we will play something normal for you. But be careful! ''')
                 self.moves.append('b'+self.columnletters[column]+'6')
                 self.position[row][column]=None
                 self.player=(self.player+1)%2
-            
+                
+    def interesting_openings(self):
+        if self.selected_piece[1]=="q" and len(self.moves)<=6:
+            for i in range(8):
+                for j in range(8):
+                    if self.position[i][j]!=None:
+                        if self.position[i][j][0]==self.selected_piece[0] and self.position[i][j][1]=="b":
+                            self.position[i][j]=None
+            show_popup("Change","The new gender doesn't change his moves. But the bishops are transphobic so they quit")#this message will appear second
+            self.piece_imb[self.selected_piece]=self.selected_piece[0]+'king.png'
+            show_popup("Congratulations","Your queen is very brave to come out this early. She is so brave she came out as a transgender")#this message will appear first
+        if self.moves[0]=='pc4' and len(self.moves)==1:
+            show_popup("English?", "You remember that the English no longer have a queen, right?")
+            self.position[0][3]=None
+        if self.moves[0]=='pd4':
+                self.position[1][3]='wpawn'
+                self.position[1][4]=None
+                self.position[3][3]=None
+                self.position[3][4]='wpawn'
+                self.moves[0]='pe4'
+                show_popup("What is this?", '''If you want to be considered a human you won't play such things.
+    For now we will play something normal for you. But be careful! ''')
+        if self.moves[0]=='pe4':
+            if len(self.moves)==2:
+                if self.moves[1]=='pe6':
+                    show_popup("French?","You know the French surrendered in WW2. You want to do the same? Fine. Black surrenders and white wins")
+                    self.running=False
+                if self.moves[1]=='pa6':
+                    show_popup("Saint George's defence","The general-saint turns the pawn into a bishop")
+                    self.position[5][0]='bbishop'
+                if self.moves[1]=='pd5':
+                    self.sk=1
+                    show_popup("Scandinavian??","That's very cold. Now the pawns and pieces can only move about half the distance before needing to warm themselves.")
+            if len(self.moves)==5:
+                if self.moves[1:5]==['pe5','nf3','nc6','bc4']:
+                    show_popup("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
+                    self.piece_imb['wqueen']='Iqueen.png'
+                    self.piece_imb['wking']='Iking.png'
+        if len(self.moves)==6:
+                if ('nf3' in self.moves and 'nf6' in self.moves and 'nc3' in self.moves and 'nc6' in self.moves):
+                    show_popup("4 knights??", "You like the knights huh? Take some more!")
+                    self.position[0][2],self.position[0][5]='wnight','wnight'
+                    self.position[7][2],self.position[7][5]='bnight','bnight'
+
 def random_pos():
     return randint(0,7), randint(0,7)
 
