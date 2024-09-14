@@ -1,20 +1,21 @@
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from random import randint,shuffle
-from kivypopup import show_popup
-class MyLayout(FloatLayout):
+from kivypopup import show_popup,QuestionPopup
+import requests
+
+class InnerFloatLayout(FloatLayout):
     def __init__(self, **kwargs):
-        super(MyLayout, self).__init__(**kwargs)
-        self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=False)
+        super(InnerFloatLayout, self).__init__(**kwargs)
+        self.image = Image(source="board.png", size_hint=(1, 1), allow_stretch=True, keep_ratio=True)
         self.add_widget(self.image)
-        self.piece_images = {
-        }
+        self.piece_images = {}
         self.piece_imb={}
         self.lexlist=['wpawn','wrook','wnight','wbishop','wking', 'wqueen','bpawn','brook','bnight','bbishop','bking','bqueen','wniqueen','bniqueen','rpawn']
         for item in self.lexlist:
             self.piece_imb[item]=item+'.png'
-            self.piece_images[item]= Image(source=self.piece_imb[item], size_hint=(0.125, 0.125))
         self.position = [
         ['wrook', 'wnight', 'wbishop', 'wqueen', 'wking', 'wbishop', 'wnight', 'wrook'],         # 00,01,02,03,04,05,06,07
         ['wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn', 'wpawn'],        # 08,09,10,11,12,13,14,15
@@ -45,19 +46,20 @@ class MyLayout(FloatLayout):
     def on_touch_down(self, touch):
         if not self.running:return 0
         self.col=int(touch.x//(self.width//8))
-        self.row=int(touch.y//(self.height//8))
+        self.row=int((touch.y-self.hbc)//(self.width//8))
+        if self.col<0 or self.col>7 or self.row<0 or self.row>7:return super(InnerFloatLayout, self).on_touch_down(touch)
         if self.position[self.row][self.col] is not None:
             self.selected_piece = self.position[self.row][self.col]
             if (self.selected_piece[0]=="w" and self.player==0) or (self.selected_piece[0]=="b" and self.player==1):            
                 self.selected_piece_position = (self.row, self.col)
                 self.movement=1
                 self.selected_imagen = self.piece_imb[self.selected_piece]  # The image of the selected piece
-                self.selected_image=Image(source=self.selected_imagen, size_hint=(0.125, 0.125),pos=(self.col*self.width/8,self.row*self.height/8))
+                self.selected_image=Image(source=self.selected_imagen, size_hint=(0.125, 0.125),pos=(self.col*self.width/8,self.hbc+self.row*self.width/8))
                 self.position[self.row][self.col] = None
                 self.draw_pieces()
                 self.add_widget(self.selected_image)
             else: self.selected_piece=None  
-        return super(MyLayout, self).on_touch_down(touch)
+        return super(InnerFloatLayout, self).on_touch_down(touch)
 
     def on_touch_move(self, touch):
         if self.selected_piece is not None:
@@ -70,7 +72,7 @@ class MyLayout(FloatLayout):
         self.orow=self.row
         if self.selected_piece!=None :
             self.col=int(touch.x//(self.width /8))
-            self.row=int(touch.y//(self.height/8))
+            self.row=int((touch.y-self.hbc)//(self.width/8))
             if self.legal(8*self.orow+self.ocol,8*self.row+self.col) and self.row>=0 and self.col >=0:
                 self.moves.append(self.selected_piece[1]+self.columnletters[self.col]+str(self.row+1))#adds the move to the list
                 self.player=(self.player+1)%2
@@ -109,18 +111,13 @@ class MyLayout(FloatLayout):
                                     if self.position[i][j][1:]!="pawn":self.position[i][j]=None
                                     else: self.position[i][j]="rpawn"
                         self.running=False
-                self.interesting_openings()                   
-                if len(self.moves)==100:
+                if len(self.moves)==150:
                     show_popup("You can't finish this game?","Try rock-paper-scissors to find the winner")
                     self.running=False
-                rd100=randint(1,150)
-                if  self.grass==0 and (rd100//17==2):
-                    self.grass=1
-                    self.mrow, self.mcol= random_pos()
-                if ( self.book==0 and rd100>=148):
-                    self.book=1
-                    self.brow,self.bcol= random_pos()
-                if rd100==66:self.suremessage=1
+                    
+                self.interesting_openings()                   
+                self.randomchanges()
+
             else:
                 self.position[self.orow][self.ocol]=self.selected_piece
         self.movement=0
@@ -130,21 +127,20 @@ class MyLayout(FloatLayout):
 
     def draw_pieces(self): 
         self.clear_widgets()  
-        self.add_widget(self.image)  
+        self.add_widget(self.image)
+        square_size=self.width//8
+        centering_factor=7*self.hbc//8
+        def add_image(source,row,col):
+            x = col * square_size
+            y = row * square_size + centering_factor
+            image = Image(source=source, size_hint=(0.125,0.125), pos=(x, y))
+            self.add_widget(image)
         for row in range(8):
             for col in range(8):
                 piece = self.position[row][col]
-                if piece is not None:
-                    x = col * self.width // 8
-                    y = row * self.height // 8
-                    piece_image = Image(source=self.piece_imb[piece] , size_hint=(0.125, 0.125),  pos=(x, y))
-                    self.add_widget(piece_image)  
-        if self.grass==1:
-            mush=Image(source="mushrooms.png",size_hint=(0.125, 0.125),pos=(self.mcol*self.width//8,self.mrow*self.height//8))
-            self.add_widget(mush)
-        if self.book==1:
-            book=Image(source="book.png",size_hint=(0.125, 0.125),pos=(self.bcol*self.width//8,self.brow*self.height//8))
-            self.add_widget(book)
+                if piece is not None:add_image(self.piece_imb[piece],row,col)
+        if self.grass==1:add_image("mushrooms.png",self.mrow,self.mcol)
+        if self.book==1:add_image("book.png",self.brow,self.bcol)
             
     def legal(self, starting_position, ending_position):# checks for the legality of the move
         difference=ending_position-starting_position
@@ -196,11 +192,11 @@ class MyLayout(FloatLayout):
         #rooks and queens
         if self.selected_piece[4]=='k' or self.selected_piece[1]=='q':
             if ending_position//8==starting_position//8:
-                if (difference*difference)>16 and self.sk==1:return 0
+                if (difference**2>16 and self.sk==1):return 0
                 if difference>0:return self.lines(starting_position,difference,1)
                 elif difference<0:return self.lines(starting_position,difference,-1)        
             if ending_position%8==starting_position%8:
-                if (difference*difference)>(32*32) and self.sk==1:return 0
+                if (difference**2)>(1024) and self.sk==1:return 0
                 if difference>0:return self.lines(starting_position,difference,8)
                 elif difference<0:return self.lines(starting_position,difference,-8)    
 
@@ -253,13 +249,13 @@ class MyLayout(FloatLayout):
                         if self.position[i][j][1]=='q': self.position[i][j]=self.position[i][j][0]+'rook'
         elif rd==5:#spawns two pawns randomly
             while True:
-                rd8_1,rd8_2=random_pos()
-                if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
+                rd8_1,rd8_2=randint(1,6),randint(0,7)
+                if  self.position[rd8_1][rd8_2]==None:
                     self.position[rd8_1][rd8_2]='wpawn'
                     break
             while True:
-                rd8_1,rd8_2=random_pos()
-                if rd8_1>0 and rd8_1<7 and self.position[rd8_1][rd8_2]==None:
+                rd8_1,rd8_2=randint(1,6),randint(0,7)
+                if  self.position[rd8_1][rd8_2]==None:
                     self.position[rd8_1][rd8_2]='bpawn'
                     break
         elif rd==6:#turns the queens into anti-queens
@@ -270,62 +266,47 @@ class MyLayout(FloatLayout):
         elif rd==7:#turns the pieces into checkers pieces
             for key in self.piece_images:
                 self.piece_imb[key]=key[0]+'checkers.png'
+        elif rd==8:#turns the color of the white pieces to black
+            for key in self.piece_images:
+                if self.piece_imb[key][0]=='w':self.piece_imb[key]='b'+self.piece_imb[key][1:]
 
     def bcurses(self):#chooses a curse
-        rd=randint(1,7)
+        rd=randint(1,8)
         curselist=["The meeting of the two bishops makes pawns on their starting position","The meeting of the two bishops curses some pawns who disappear",  "The meeting of the two bishops changes the knights and bishops",
                  "The meeting of the two bishops curses the queens who turn into rooks", "The meeting of the two bishops makes two pawns appear somewhere on the board","The meeting of the two bishops curses the queens who turn into anti-queens. They move in the range of two tiles where a normal queen can't move on an empty board.",
-                  "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before"]
+                  "The meeting of the two bishops curses the pieces who turn into checkers pieces. They move the same as before","The meeting of the two bishops turns the color of the white pieces into black. They move the same but have different color"]
         show_popup("Cursed",curselist[rd-1])
         self.curses(rd)
         
     def enpassant (self, row,column):#checks for enpassant
-        if self.position[row][column]=='wpawn':
+        reverselex={"w":"b","b":"w"}
+        letter=self.position[row][column][0]
+        reversepawn=reverselex[letter]+"pawn"
+        if letter=="w": numberlist=[ -1,3]
+        else:numberlist=[ 1,6]
+        ep=0
+        try:
+            if self.position[row][column-1]==reversepawn:
+                self.position[row][column-1]=None
+                ep+=1
+            if self.position[row][column+1]==reversepawn:
+                self.position[row][column+1]=None
+                ep+=1
+        except:pass
+        if ep==1:
+            self.position[row][column]=None
+            self.position[row+numberlist[0]][column]=reversepawn
+            self.player=(self.player+1)%2
+            self.moves.append('p'+self.columnletters[column]+str(numberlist[1]))
             ep=0
-            try:
-                if self.position[row][column-1]=='bpawn':
-                    self.position[row][column-1]=None
-                    ep+=1
-                if self.position[row][column+1]=='bpawn':
-                    self.position[row][column+1]=None
-                    ep+=1
-            except:pass
-            if ep==1:
-                self.position[row][column]=None
-                self.position[row-1][column]='bpawn'
-                self.player=(self.player+1)%2
-                self.moves.append('p'+self.columnletters[column]+'3')
-                ep=0
-                show_popup("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
-            if ep==2:
-                show_popup("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
-                self.position[row-1][column]='bbishop'
-                self.position[row][column]=None
-                self.player=(self.player+1)%2
-                self.moves.append('b'+self.columnletters[column]+'3')
-        if self.position[row][column]=='bpawn':
-            ep=0
-            try:
-                if self.position[row][column-1]=='wpawn':
-                    self.position[row][column-1]=None
-                    ep+=1
-                if self.position[row][column+1]=='wpawn':
-                    self.position[row][column+1]=None
-                    ep+=1
-            except:pass
-            if ep==1:
-                self.position[row][column]=None
-                self.position[row+1][column]='wpawn'
-                self.player=(self.player+1)%2
-                self.moves.append('p'+self.columnletters[column]+'6')
-                ep=0
-                show_popup("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
-            if ep==2:
-                show_popup("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
-                self.position[row+1][column]='wbishop'
-                self.moves.append('b'+self.columnletters[column]+'6')
-                self.position[row][column]=None
-                self.player=(self.player+1)%2
+            show_popup("En Passant","Congratulations En Passant just happened.(automatically because it is a forced move)")
+        if ep==2:
+            show_popup("Double En Passant","That is a miracle. It is so miraculous that changed the pawn into a bishop")
+            self.position[row+numberlist[0]][column]=reversepawn
+            self.position[row][column]=None
+            self.player=(self.player+1)%2
+            self.moves.append('b'+self.columnletters[column]+str(numberlist[1]))
+
                 
     def interesting_openings(self):
         if self.selected_piece[1]=="q" and len(self.moves)<=6:
@@ -364,20 +345,73 @@ class MyLayout(FloatLayout):
                     show_popup("Italian??"," Your king and queen will change their style. It won't affect your game but it will remind everyone your wrong choices")
                     self.piece_imb['wqueen']='Iqueen.png'
                     self.piece_imb['wking']='Iking.png'
+                if self.moves[1:5]==['pe5','nf3','nc6','bb5']:
+                    show_popup("Spanish?","Be careful. Nobody expects the spanish Inquisition")
+                    for i in range(6,8):
+                        self.position[2][i]="wbishop"
+                        self.position[3][i]="wbishop"
+                        self.position[4][i]="bbishop"
+                        self.position[5][i]="bbishop"
         if len(self.moves)==6:
                 if ('nf3' in self.moves and 'nf6' in self.moves and 'nc3' in self.moves and 'nc6' in self.moves):
                     show_popup("4 knights??", "You like the knights huh? Take some more!")
                     self.position[0][2],self.position[0][5]='wnight','wnight'
                     self.position[7][2],self.position[7][5]='bnight','bnight'
+                    
+    def randomchanges(self):
+        rd100=randint(1,150)
+        if  self.grass==0 and (rd100//17==2):
+            self.grass=1
+            self.mrow, self.mcol= self.random_pos()
+        if ( self.book==0 and rd100>=148):
+            self.book=1
+            self.brow,self.bcol= self.random_pos()
+        if rd100==66:self.suremessage=1
+        if (rd100==23 or rd100==123):self.random_fact()
+        if (rd100>=2 and rd100<=5):self.multiplechoice()
+        
+    def random_pos(self):
+        return randint(0,7), randint(0,7)
 
-def random_pos():
-    return randint(0,7), randint(0,7)
+    def random_fact(self):
+        try:
+            r=requests.get("https://uselessfacts.jsph.pl/api/v2/facts/random")
+            data=r.json()
+            show_popup("Fun Fact", data["text"])
+        except:
+            pass
 
+    def multiplechoice(self):
+        try:
+            r=requests.get("https://opentdb.com/api.php?amount=1&type=multiple")
+            data=r.json()["results"][0]
+            def testfunc(result):
+                if (result):self.player=(self.player+1)%2
+            objecttest=QuestionPopup()
+            test=objecttest.show_question_popup(data["question"],data["correct_answer"],data["incorrect_answers"],testfunc)
+        except: pass
+
+class OuterFloatLayout(FloatLayout):
+    def __init__(self, **kwargs):
+        super(OuterFloatLayout, self).__init__(**kwargs)
+        self.create_game()
+    def create_game(self):
+        self.inner_layout = InnerFloatLayout()
+        self.inner_layout.hbc=(self.height-self.width)//2
+        self.add_widget(self.inner_layout)
+        self.bind(size=self._update_inner_layout_size)
+    def _update_inner_layout_size(self, instance, value):
+        width, height = self.size
+        side_length = min(width, height)
+        self.inner_layout.size = (side_length, side_length)
+        self.inner_layout.pos = ((width - side_length) / 2, (height - side_length) / 2)
+        self.inner_layout.hbc=(self.height-self.width)//2
+        
 class NewChessApp(App):
     def build(self):
-        global window
-        window=MyLayout()
-        return window
-    
+        global outer_layout
+        outer_layout = OuterFloatLayout()
+        return outer_layout
+
 if __name__ == '__main__':
     NewChessApp().run()
